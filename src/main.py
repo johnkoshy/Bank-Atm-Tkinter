@@ -35,7 +35,7 @@ def database():
     mydb = mysql.connector.connect(
         host="localhost",
         user="root",
-        password="",
+        password="root",
         database="bank"
     )
     mycursor = mydb.cursor()
@@ -249,10 +249,12 @@ def validate_age(value):
 def customer_name():
     database()
     global name
-    mycursor.execute("SELECT concat(first_name, ' ' , last_name) as fullname from customers where username=%s", (USERNAME.get(),))
+    mycursor.execute("SELECT CONCAT(first_name, ' ', last_name) AS fullname FROM customers WHERE username=%s", (USERNAME.get(),))
     res = mycursor.fetchone()
-    for name in res:
-        print(name)
+    if res is None:
+        return "Unknown"
+    name = res[0]
+    print(name)
     return name
 
 
@@ -268,20 +270,24 @@ def account_number():
 def get_ac_number():
     database()
     global ac_num
-    mycursor.execute("SELECT account_number from customers where username=%s", (USERNAME.get(),))
+    mycursor.execute("SELECT account_number FROM customers WHERE username=%s", (USERNAME.get(),))
     res = mycursor.fetchone()
-    for ac_num in res:
-        print(ac_num)
+    if res is None:
+        return "Unknown"
+    ac_num = res[0]
+    print(ac_num)
     return ac_num
 
 
 def net_bal():
     database()
     global original_balance
-    mycursor.execute("SELECT balance from customers where username=%s", (USERNAME.get(),))
+    mycursor.execute("SELECT balance FROM customers WHERE username=%s", (USERNAME.get(),))
     res = mycursor.fetchone()
-    for original_balance in res:
-        print(original_balance)
+    if res is None:
+        return None
+    original_balance = res[0]
+    print(original_balance)
     return original_balance
 
 
@@ -332,21 +338,37 @@ def wit_exit_to_login():
 
 
 def withdraw():
-    database()
-    global balance
-    previous_balance = net_bal()
-    balance = previous_balance
-    if int(WITHDRAWAL.get()) < previous_balance - 2000:
-        withdraw_amt = int(WITHDRAWAL.get())
-        balance -= withdraw_amt
-        mycursor.execute("update customers set withdrawal=%s, balance=%s where username=%s",
-                         (str(WITHDRAWAL.get()), balance, str(USERNAME.get())))
-        mydb.commit()
-        lbl_withdrawal_result.config(text="Successfully Withdrawn!", fg="black")
-    else:
-        lbl_withdrawal_result.config(text="Insufficient Balance!", fg="black")
-    mycursor.close()
-    mydb.close()
+    try:
+        database()
+        global balance
+        previous_balance = net_bal()
+        if previous_balance is None:
+            lbl_withdrawal_result.config(text="Error: Account not found!", fg="red")
+            return
+        balance = previous_balance
+        withdrawal_amt = WITHDRAWAL.get()
+        if not withdrawal_amt.isdigit():
+            lbl_withdrawal_result.config(text="Please enter a valid number!", fg="red")
+            return
+        withdrawal_amt = int(withdrawal_amt)
+        if withdrawal_amt <= 0:
+            lbl_withdrawal_result.config(text="Withdrawal amount must be positive!", fg="red")
+            return
+        if withdrawal_amt < balance - 2000:
+            balance -= withdrawal_amt
+            mycursor.execute("UPDATE customers SET balance=%s WHERE username=%s",
+                             (balance, str(USERNAME.get())))
+            mydb.commit()
+            lbl_withdrawal_result.config(text="Successfully Withdrawn!", fg="black")
+        else:
+            lbl_withdrawal_result.config(text="Insufficient Balance!", fg="black")
+    except mysql.connector.Error as err:
+        lbl_withdrawal_result.config(text=f"Database Error: {err}", fg="red")
+    except ValueError:
+        lbl_withdrawal_result.config(text="Invalid withdrawal amount!", fg="red")
+    finally:
+        mycursor.close()
+        mydb.close()
     return balance
 
 
