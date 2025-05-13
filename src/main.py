@@ -7,7 +7,7 @@ import random
 window = Tk()
 window.title("SBI - ATM")
 window.geometry("800x750")
-window.iconbitmap(r'C:\Users\johnk\Downloads\ico_file\sbi.ico')
+window.iconbitmap('sbi.ico')
 
 # ---------------Variables-------------
 
