@@ -1,5 +1,12 @@
 Bank ATM Tkinter
 A simple Bank ATM simulation built with Python and Tkinter, using MySQL for data storage.
+
+## Screenshots
+
+The following screenshot shows the registration form of the Bank ATM application:
+
+![ATM Register Form](screenshots/atm_register.png)
+
 Prerequisites
 
 Python: Version 3.13 or later (python --version).
